@@ -25,7 +25,7 @@ class ReportController extends Controller
     $comp=$validated_data['company_name'];
     //!! NOTE: that this code is used in Case that from the frontend we take the company name and Not the stock name
     // it is responsible for taking the company name and getting the stock name that will be used in the second API call
-    /*
+
     $url='https://yahoo-finance127.p.rapidapi.com/search/'.$comp;
     try{
     $response = $client->request('GET', $url, [
@@ -38,8 +38,8 @@ class ReportController extends Controller
     $comp=$company['quotes'][0]['symbol'];
     }
     catch(Exception $e){
-        return response()->json('API call failed')
-    }*/
+        return response()->json('API call failed');
+    }
     $url='https://yahoo-finance127.p.rapidapi.com/finance-analytics/'.$comp;
     try{
     $response = $client->request('GET', $url, [
