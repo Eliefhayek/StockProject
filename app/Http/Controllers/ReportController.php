@@ -62,7 +62,7 @@ class ReportController extends Controller
        $chat_client = new Client();
        // this is the command sent to chatgpt to get the stock review
         $message='I have the following information about'. $comp .' stock could you please write a detailed analysis with bullet points about it : '.$datas;
-        // Kindly note the used API key does not Work because it requires
+        // Kindly note the used API key does not Work because it requires a payed account to work
         try{
         $response = $chat_client->post('https://api.openai.com/v1/chat/completions', [
             'headers' => [
