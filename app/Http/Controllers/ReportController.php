@@ -27,7 +27,7 @@ class ReportController extends Controller
     // it is responsible for taking the company name and getting the stock name that will be used in the second API call
     /*
     $url='https://yahoo-finance127.p.rapidapi.com/search/'.$comp;
-
+    try{
     $response = $client->request('GET', $url, [
             'headers' => [
                 'X-RapidAPI-Host' => 'yahoo-finance127.p.rapidapi.com',
@@ -35,9 +35,13 @@ class ReportController extends Controller
             ],
         ]);
     $company= json_decode($response->getBody(), true);
-    $comp=$company['quotes'][0]['symbol'];*/
-
+    $comp=$company['quotes'][0]['symbol'];
+    }
+    catch(Exception $e){
+        return response()->json('API call failed')
+    }*/
     $url='https://yahoo-finance127.p.rapidapi.com/finance-analytics/'.$comp;
+    try{
     $response = $client->request('GET', $url, [
 	    'headers' => [
 		    'X-RapidAPI-Host' => 'yahoo-finance127.p.rapidapi.com',
@@ -49,11 +53,16 @@ class ReportController extends Controller
     $data = json_decode($response->getBody(), true);
     // we transform the data into a string to use it for the chatgpt message
     $datas= json_encode($data);
-    return response()->json($datas);
+}
+    catch(Exception $e){
+        return response()->json('API call failed');
+    }
+
        $chat_client = new Client();
        // this is the command sent to chatgpt to get the stock review
         $message='I have the following information about'. $comp .' stock could you please write a detailed analysis with bullet points about it : '.$datas;
         // Kindly note the used API key does not Work because it requires
+        try{
         $response = $chat_client->post('https://api.openai.com/v1/chat/completions', [
             'headers' => [
                 'Authorization' => 'Bearer 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',
@@ -69,6 +78,10 @@ class ReportController extends Controller
         $reply = $response['choices'][0]['message']['content'];
 
         return response()->json(['reply' => $reply]);
+    }
+    catch(Exception $e){
+        return response()->json('API call failed');
+    }
     }
 
 
