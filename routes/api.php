@@ -19,3 +19,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 Route::get('/stock',[ReportController::class,'Report']);
+Route::get('/try',[ReportController::class,'getSymbol']);
+Route::get('/chart',[ReportController::class,"chart"]);
+Route::get('/pdf',[ReportController::class,"pdf"]);

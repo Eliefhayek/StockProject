@@ -6,6 +6,10 @@ use Exception;
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
 use OpenAI\Laravel\Facades\OpenAI;
+use QuickChart;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
+use Dompdf\Dompdf;
 class ReportController extends Controller
 {
     //
@@ -23,29 +27,18 @@ class ReportController extends Controller
         return response()->json('inValid Data');
     }
     $comp=$validated_data['company_name'];
-    //!! NOTE: that this code is used in Case that from the frontend we take the company name and Not the stock name
-    // it is responsible for taking the company name and getting the stock name that will be used in the second API call
-/*
-    $url='https://yahoo-finance127.p.rapidapi.com/search/'.$comp;
-    try{
-    $response = $client->request('GET', $url, [
-            'headers' => [
-                'X-RapidAPI-Host' => 'yahoo-finance127.p.rapidapi.com',
-                'X-RapidAPI-Key' => 'e37df0ca45msh895064d1580e35dp1334b6jsn4a0af753f28c',
-            ],
-        ]);
-    $company= json_decode($response->getBody(), true);
-    $comp=$company['quotes'][0]['symbol'];
-    }
-    catch(Exception $e){
-        return response()->json('API call failed');
-    }*/
+    $comp=$validated_data['company_name'];
+    $url='https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords='.$comp.'&apikey=OQ6AKG7RHH5WHOY5';
+    $json = file_get_contents($url);
+
+    $data = json_decode($json,true);
+    $comp=$data['bestMatches'][0]['1. symbol'];
     $url='https://yahoo-finance127.p.rapidapi.com/finance-analytics/'.$comp;
     try{
     $response = $client->request('GET', $url, [
 	    'headers' => [
-		    'X-RapidAPI-Host' => 'yahoo-finance127.p.rapidapi.com',
-		    'X-RapidAPI-Key' => 'e37df0ca45msh895064d1580e35dp1334b6jsn4a0af753f28c',
+            'X-RapidAPI-Host' => 'yahoo-finance127.p.rapidapi.com',
+            'X-RapidAPI-Key' => '734b1990cemsh7da219e7b57aac6p1750c7jsn5773045cb9f9',
 	],
 ]);
 
@@ -59,26 +52,27 @@ class ReportController extends Controller
         return response()->json('API call failed');
     }
 
+
        $chat_client = new Client();
        // this is the command sent to chatgpt to get the stock review
-        $message='I have the following information about'. $comp .' stock could you please write a detailed analysis with bullet points about it : '.$datas;
+        $message='I have the following information about'. $comp .' stock could you please write a detailed analysis and report with bullet points about it : '.$datas;
         // Kindly note the used API key does not Work because it requires a payed account to work
         try{
         $response = $chat_client->post('https://api.openai.com/v1/chat/completions', [
             'headers' => [
-                'Authorization' => 'Bearer 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',
+                'Authorization' => 'Bearer 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',
                 'Content-Type' => 'application/json',
             ],
             'json' => [
                 'model' => 'gpt-3.5-turbo',
                 'messages' => [['role' => 'system', 'content' => $message]],
-                'max_tokens' => 50,
+                'max_tokens' => 200,
                 'temperature' => 0.2,
             ],
         ]);
-        $reply = $response['choices'][0]['message']['content'];
+        $data = json_decode($response->getBody(), true);
 
-        return response()->json(['reply' => $reply]);
+        return response()->json($data);
     }
     catch(Exception $e){
         return response()->json('API call failed');
@@ -86,4 +80,67 @@ class ReportController extends Controller
     }
 
 
+public function chart(Request $request){
+    try{
+        $validated_data=$request->validate([
+            'company_name'=>'required'
+        ]);
+    }
+    catch (Exception $e) {
+
+
+        return response()->json('inValid Data');
+    }
+    $comp=$validated_data['company_name'];
+    $url='https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords='.$comp.'&apikey=OQ6AKG7RHH5WHOY5';
+    $json = file_get_contents($url);
+    $data = json_decode($json,true);
+    $comp=$data['bestMatches'][0]['1. symbol'];
+    $client = new Client();
+
+$response = $client->request('GET', 'https://yahoo-finance127.p.rapidapi.com/earnings/'.$comp, [
+	'headers' => [
+		'X-RapidAPI-Host' => 'yahoo-finance127.p.rapidapi.com',
+		'X-RapidAPI-Key' => 'e37df0ca45msh895064d1580e35dp1334b6jsn4a0af753f28c',
+	],
+]);
+$years=[];
+$revenue=[];
+$profit=[];
+$data = json_decode($response->getBody(), true);
+foreach ($data['financialsChart']['yearly'] as $item) {
+    $years[] = $item['date'];
+    $revenue[]=$item['revenue']['raw'];
+    $profit[]= $item['earnings']['raw'];
+}
+$years= implode(',', $years);
+$revenue= implode(',', $revenue);
+$profit= implode(',', $profit);
+$chart = new QuickChart(array(
+  'width' => 500,
+  'height' => 300
+));
+
+$chart->setConfig('{
+  type: "bar",
+  data: {
+    labels: ['.$years.'],
+    datasets: [{
+      label: "revenue",
+      data: ['.$revenue.'],
+    backgroundColor : "rgba(75, 192, 192, 0.2)",
+    borderColor : "rgba(75, 192, 192, 1)",
+    borderWidth : "1"
+    },
+    {
+    label: "profits",
+    data: ['.$profit.'],
+    backgroundColor : "rgba(255, 99, 132, 0.2)",
+    borderColor : "rgba(255, 99, 132, 1)",
+    borderWidth : "1",
+    }]
+  }
+}');
+return response()->json($chart->getUrl());
+}
 }
