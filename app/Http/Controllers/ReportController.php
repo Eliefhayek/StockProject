@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Http;
 use Dompdf\Dompdf;
+use Dompdf\Adapter\PDFLib;
 class ReportController extends Controller
 {
     //
@@ -141,7 +142,83 @@ to write a profitibality report by taking the following parameters into consider
 and ebitda: ' . $ebitda .' after finishing this report I would Like you to write a SWOT report regarding this company by taking into consideration the following
  competion and industry, return per asset: '. $return_per_asset . ' return per capital: '. $return_per_capital . ', total debt: ' . $total_debt . ', Total Liabalities:
   '. $total_liabilities . ', short_term_investment: ' . $short_term_investment . ', total assets: '. $total_assets. 'and price to book: '. $price_to_book;
-  return response()->json($GPT_message);
+
+    $response = $client->post('https://api.openai.com/v1/chat/completions', [
+        'headers' => [
+            'Authorization' => 'Bearer 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',
+            'Content-Type' => 'application/json',
+        ],
+        'json' => [
+            'model' => 'gpt-3.5-turbo',
+            'messages' => [['role' => 'system', 'content' => $GPT_message]],
+            'max_tokens' => 1029,
+            'temperature' => 0.2,
+        ],
+    ]);
+    $data = json_decode($response->getBody(), true);
+
+    return response()->json($data['choices'][0]['message']['content']);
+
+}
+public function CreatePDF(){
+    $GPT_Respons='Financial Report on Nike:\n\nNike is a multinational corporation that designs, develops, and sells athletic footwear, apparel, and accessories. The company was founded in 1964 and is headquartered in Beaverton, Oregon. Nike is one of the world largest suppliers of athletic shoes and apparel, with revenue of $37.4 billion in 2020.\n\nProfitability Report on Nike:\n\nNike net income for the fiscal year 2020 was $5.48 billion, and its earnings per share were $32.44. The companys EBITDA was $7.08 billion. These figures indicate that Nike is a highly profitable company with a strong financial position.\n\nSWOT Report on Nike:\n\nStrengths:\n- Strong brand recognition and reputation\n- Diversified product portfolio\n- Innovative product design and development\n- Strong financial position with high returns on assets and capital\n- Large market share in the athletic footwear and apparel industry\n\nWeaknesses:\n- Dependence on third-party manufacturers\n- High levels of debt and liabilities\n- Vulnerability to economic downturns and changes in consumer preferences\n- Limited presence in emerging markets\n\nOpportunities:\n- Expansion into new markets and product categories\n- Growth in e-commerce and digital marketing\n- Increasing demand for sustainable and eco-friendly products\n- Partnerships and collaborations with other companies and organizations\n\nThreats:\n- Intense competition from other athletic footwear and apparel companies\n- Fluctuations in raw material prices and supply chain disruptions\n- Changing consumer preferences and trends\n- Regulatory and legal challenges related to labor practices and environmental impact.';
+    $result=explode('Profitability',$GPT_Respons);
+    $introduction=$result[0];
+    $introduction = str_replace("\n", "", $introduction);
+    $result=explode('SWOT',$result[1]);
+    $profitibality=$result[0];
+    $profitibality= str_replace("\n", "", $profitibality);
+    $result=explode('Strengths',$result[1]);
+    $result=explode('Weaknesses',$result[1]);
+    $Strength=$result[0];
+    $Strength= str_replace("\n", "", $Strength);
+    $result=explode('Opportunities',$result[1]);
+    $weakness=$result[0];
+    $weakness=str_replace("\n", "", $weakness);
+    $result=explode('Threats',$result[1]);
+    $oppurtunities=$result[0];
+    $oppurtunities=str_replace("\n","",$oppurtunities);
+    $threat=$result[1];
+    $threat=str_replace("\n","",$threat);
+    $html = '<html>
+    <head>
+        <title>financial Report</title>
+        <br><br>
+    </head>
+    <body>
+        <p>'.$introduction.'</p>
+        <br><br>
+        <h2>Profitibality</h2>
+        <br>
+        <p>'.$profitibality.'</p>
+        <br><br>
+        <h2>SWOT Report</h2>
+        <br>
+        <h3>Strength</h3>
+        <br>
+        <p>'.$Strength.'</p>
+        <br><br>
+        <h3>Weakness</h3>
+        <br>
+        <p>'.$weakness.'</p>
+        <br><br>
+        <h3>Oppurunities</h3>
+        <br>
+        <p>'.$oppurtunities.'</p>
+        <br><br>
+        <h3>Threats</h3>
+        <br>
+        <p>'.$threat.'</p>
+        <br><br>
+    </body>
+</html>';
+$dompdf = new Dompdf();
+$dompdf->loadHtml($html);
+$dompdf->setPaper('A4', 'portrait');
+$dompdf->render();
+
+return response()->json( $dompdf->stream('sample.pdf'));
+
 
 }
 }
