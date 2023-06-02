@@ -23,3 +23,4 @@ Route::get('/try',[ReportController::class,'getSymbol']);
 Route::get('/chart',[ReportController::class,"chart"]);
 Route::get('/swot',[ReportController::class,"SwotReview"]);
 Route::get('/pdf',[ReportController::class,'CreatePDF']);
+Route::get('/test',[ReportController::class,'testing']);

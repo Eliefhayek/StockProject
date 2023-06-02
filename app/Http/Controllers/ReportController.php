@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\EmailSender;
 use Exception;
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
@@ -29,6 +30,7 @@ class ReportController extends Controller
         return response()->json('inValid Data');
     }
     $comp=$validated_data['company_name'];
+    /*
     $comp=$validated_data['company_name'];
     $url='https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords='.$comp.'&apikey=OQ6AKG7RHH5WHOY5';
     $json = file_get_contents($url);
@@ -62,13 +64,13 @@ class ReportController extends Controller
         try{
         $response = $chat_client->post('https://api.openai.com/v1/chat/completions', [
             'headers' => [
-                'Authorization' => 'Bearer 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',
+                'Authorization' => 'Bearer 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',
                 'Content-Type' => 'application/json',
             ],
             'json' => [
                 'model' => 'gpt-3.5-turbo',
                 'messages' => [['role' => 'system', 'content' => $message]],
-                'max_tokens' => 200,
+                'max_tokens' => 1029,
                 'temperature' => 0.2,
             ],
         ]);
@@ -78,7 +80,9 @@ class ReportController extends Controller
     }
     catch(Exception $e){
         return response()->json('API call failed');
-    }
+    }*/
+    EmailSender::dispatch($comp)->afterResponse();
+    return response()->json('Recieving Email in a few');
     }
 
 
@@ -96,6 +100,8 @@ catch (Exception $e) {
     return response()->json('inValid Data');
 }
 $comp=$validated_data['company_name'];
+
+/*
 $url='https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords='.$comp.'&apikey=OQ6AKG7RHH5WHOY5';
 $json = file_get_contents($url);
 
@@ -151,13 +157,16 @@ and ebitda: ' . $ebitda .' after finishing this report I would Like you to write
         'json' => [
             'model' => 'gpt-3.5-turbo',
             'messages' => [['role' => 'system', 'content' => $GPT_message]],
-            'max_tokens' => 1029,
-            'temperature' => 0.2,
+            'max_tokens' => 1000,
+            'temperature' => 0.3,
         ],
     ]);
     $data = json_decode($response->getBody(), true);
 
-    return response()->json($data['choices'][0]['message']['content']);
+    return response()->json($data['choices'][0]['message']['content']);*/
+    EmailSender::dispatch($comp)->afterResponse();
+    return response()->json('recieve email in a few');
+
 
 }
 public function CreatePDF(){
@@ -218,7 +227,40 @@ $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
 
 return response()->json( $dompdf->stream('sample.pdf'));
+}
+public function testing(){
+    /*
+   $pdfFileName = 'Nike.pdf';
 
+$pdfPath = storage_path('app/public/' . $pdfFileName);
+
+if (file_exists($pdfPath)) {
+
+    return $pdfPath;
+} else {
+    return 'PDF file not found.';
+}
+/*
+$dompdf = new Dompdf();
+
+// Load HTML content into Dompdf
+$html = '<h1>PDF Content</h1>';
+$dompdf->loadHtml($html);
+
+// Render the PDF
+$dompdf->render();
+
+// Get the PDF content as a string
+$pdfContent = $dompdf->output();
+
+// Specify the storage path and filename
+$pdfPath = storage_path('app/public/Nike.pdf');
+
+// Save the PDF file to the storage folder
+file_put_contents($pdfPath, $pdfContent);
+return response()->json("success");*/
+EmailSender::dispatch("tesla")->afterResponse();
+return response()->json("success");
 
 }
 }
