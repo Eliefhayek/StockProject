@@ -263,4 +263,32 @@ EmailSender::dispatch("tesla")->afterResponse();
 return response()->json("success");
 
 }
+public function pdfInfo(){
+    $client = new Client();
+    $url='https://yahoo-finance127.p.rapidapi.com/finance-analytics/ELUX-B.ST';
+
+    $response = $client->request('GET', $url, [
+	    'headers' => [
+            'X-RapidAPI-Host' => 'yahoo-finance127.p.rapidapi.com',
+            'X-RapidAPI-Key' => 'e37df0ca45msh895064d1580e35dp1334b6jsn4a0af753f28c',
+	],]);
+    $data = json_decode($response->getBody(), true);
+    $total_debt=$data['totalDebt']['fmt'];
+    $ebit_margin=$data['ebitdaMargins']['fmt'];
+    $ebitda=$data['ebitda']['fmt'];
+    $total_rev=$data['totalRevenue']['fmt'];
+    $gpt_message="there is a total debt of". $total_debt."and there is ebitdaMargins for this company is ". $ebit_margin." and ebitida of this company is  ".$ebitda." and a total revenu of ".$total_rev." can you give an analysis about the company from the given values";
+
+$url='https://yahoo-finance127.p.rapidapi.com/earnings/ELUX-B.ST';
+    $response = $client->request('GET', $url, [
+	    'headers' => [
+            'X-RapidAPI-Host' => 'yahoo-finance127.p.rapidapi.com',
+            'X-RapidAPI-Key' => '734b1990cemsh7da219e7b57aac6p1750c7jsn5773045cb9f9',
+	],]);
+    $data = json_decode($response->getBody(), true);
+    $x=$data['financialsChart']['yearly'];
+    $gpt_message="in the last three year there is the following revenue  ".$x[0]['revenue']["fmt"]." ".$x[1]['revenue']["fmt"]." ".  $x[2]['revenue']["fmt"]."  could you give me the growth percentage over the last 3 years Also by using the revenue given try and give me how much the revenue will grow in the next three years";
+    return response()->json($gpt_message);
+
+}
 }
